@@ -1,0 +1,44 @@
+name: Daily Telegram Sender
+
+on:
+  schedule:
+    # Run at 01:00 UTC every day (8:00 AM Vietnam Time)
+    - cron: '0 1 * * *'
+  workflow_dispatch: # Allow manual run for testing
+
+permissions:
+  contents: write
+
+jobs:
+  send_daily_drug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install requests
+
+    - name: Run Daily Sender Script
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      run: |
+        cd Automation_Telegram
+        python daily_sender.py
+
+    - name: Commit and Push Log Changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add Automation_Telegram/sent_log.json
+        # Only commit if there are changes
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto: Update sent log" && git push)
